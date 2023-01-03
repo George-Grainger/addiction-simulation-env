@@ -7,9 +7,25 @@ class RLBase(ABC):
     Provides base properties and abstract methods required by all rl algorithms
     """
 
+    def __init__(self, debug: bool=False):
+        self._debug = debug
+        self.reset()
+
     #-------------------------------------------------------------------------------------------
     # Properties
     #-------------------------------------------------------------------------------------------
+
+    @property
+    def ep_obs(self) -> list[int]:
+        return self._ep_obs
+    
+    @property
+    def ep_actions(self) -> list[int]:
+        return self._ep_actions
+    
+    @property
+    def ep_rewards(self) -> list[float]:
+        return self._ep_rewards
 
     @property
     def gamma(self) -> float:
@@ -66,6 +82,11 @@ class RLBase(ABC):
     # Methods
     #-------------------------------------------------------------------------------------------
 
+    def reset(self, initial_obs=None):
+        self._ep_obs = [initial_obs] if initial_obs else []
+        self._ep_actions = []
+        self._ep_rewards = []
+
     @abstractmethod
     def save_model(self, path: str):
         """
@@ -86,6 +107,7 @@ class RLBase(ABC):
         """
         raise NotImplementedError("get_action method must be implemented.")
 
+
     @abstractmethod
     def train(self, obv, action, reward, next_obv) -> float:
         """
@@ -99,5 +121,9 @@ class RLBase(ABC):
 
             next_obv is the observation after taking action in the current state
         """
-        raise NotImplementedError("train method must be implemented.")
+        if(self._debug):
+            self.ep_actions.append(action)
+            self.ep_rewards.append(reward)
+            self.ep_obs.append(next_obv)
 
+        return 0

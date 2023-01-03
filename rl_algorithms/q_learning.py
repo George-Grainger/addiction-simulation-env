@@ -7,7 +7,7 @@ from rl_algorithms.rl_base import RLBase
 class QLearning(RLBase):
     """Class to contain Q-table and all parameters with methods to update Q-table and get actions."""
 
-    def __init__(self, n_states: int, n_actions: int, gamma: float=0.99, epsilon_max: float=1.0, epsilon_min: float=0.01, lr: float=0.7, decay: float=0.999, saved_path: str=None):
+    def __init__(self, n_states: int, n_actions: int, gamma: float=0.99, epsilon_max: float=1.0, epsilon_min: float=0.01, lr: float=0.7, decay: float=0.999, saved_path: str=None, **kwargs):
         """
         function to initalise the QLearning class
         n_states is the number of discrete (discretised if continuous) states in the environment
@@ -19,6 +19,8 @@ class QLearning(RLBase):
         lr_decay is the rate at which the learning rate will decay exponentially
         saved_path 
         """
+        super().__init__(**kwargs)
+
         self.gamma = gamma
         self.lr = lr
         self.decay = decay
@@ -71,6 +73,10 @@ class QLearning(RLBase):
     # Methods
     #-------------------------------------------------------------------------------------------
 
+    def _get_td_diff(self, obs_i: int, action: int, reward: int, next_obs_i: int):
+        td_target = reward + (self.gamma * np.max(self.q_table[next_obs_i]))
+        return td_target - self.q_table[obs_i, action]
+
     def save_model(self, path: str):
         """
         function to save the model (q-table) to a file
@@ -79,10 +85,10 @@ class QLearning(RLBase):
         with open(path, "wb") as handle:
             pickle.dump(self.q_table, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    def get_action(self, obv_i: int):
+    def get_action(self, obs_i: int):
         """
         function to get the action based on the current observation using an epsilon-greedy policy
-        obv_i is the current observation of the state indexed for the q_table (done using index_obv function)
+        obs_i is the current observation of the state indexed for the q_table (done using index_obv function)
         returns the action to take as an int
         Note: index_obv function should be done outside of this class to prevent performance issues
         """
@@ -91,7 +97,7 @@ class QLearning(RLBase):
             action = np.random.choice(self.n_actions)
         else:
             #policy is greedy
-            action = np.argmax(self.q_table[obv_i])
+            action = np.argmax(self.q_table[obs_i])
 
         return action
 
@@ -103,18 +109,15 @@ class QLearning(RLBase):
         self.epsilon *= self.decay ** (n_t + 1)
         self.lr *= self.decay ** (n_t + 1)
 
-    def train(self, obv_i: int, action: int, reward: int, next_obv_i: int):
+    def train(self, obs_i: int, action: int, reward: int, next_obs_i: int):
         """
         function to train agent by applying the q-value update rule to the q-table
-        obv_i is the observation from the environment indexed for the q_table (done using index_obv function)
+        obs_i is the observation from the environment indexed for the q_table (done using index_obv function)
         action is the action taken by the agent
         reward is the reward provided by the environment after taking action in current state
-        next_obv_i is the observation after taking action in the current state indexed for the q_table (done using the index_obv function)
+        next_obs_i is the observation after taking action in the current state indexed for the q_table (done using the index_obv function)
         Note: index_obv function should be done outside of this class to prevent performance issues
         """
-        #ensure action is an int for indexing q-table
-        action = int(action)
-
-        td_target = reward + (self.gamma * np.max(self.q_table[next_obv_i]))
-        td_diff = td_target - self.q_table[obv_i, action]
-        self.q_table[obv_i, action] += self.lr * td_diff
+        super().train(obs_i, action, reward, next_obs_i)
+        td_diff = self._get_td_diff(obs_i, action, reward, next_obs_i)
+        self.q_table[obs_i, action] += self.lr * td_diff

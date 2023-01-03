@@ -1,1 +1,3 @@
+from rl_algorithms.rl_base import RLBase
 from rl_algorithms.q_learning import QLearning
+from rl_algorithms.awry_q_learning import AwryQLearning

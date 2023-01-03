@@ -1,15 +1,17 @@
 import gym
+import numpy as np
 from gym import spaces
 
 class AddictionEnv(gym.Env):
     """Class representing the addiction learning environment."""
 
     metadata = {"render_modes": [None]}
-    NUM_STATES = 3
+    NUM_STATES = 1
+    NUM_ACTIONS = 2
 
     def __init__(self, render_mode: str=None):
         self.observation_space = spaces.Discrete(AddictionEnv.NUM_STATES)
-        self.action_space = spaces.Discrete(4)
+        self.action_space = spaces.Discrete(AddictionEnv.NUM_ACTIONS)
         self.iterations = 0
         self.current_state = 0
 
@@ -23,7 +25,7 @@ class AddictionEnv(gym.Env):
     @current_state.setter
     def current_state(self, val: int):
         if(val not in range(AddictionEnv.NUM_STATES)):
-            raise ValueError("Iterations must be greater than 0")
+            raise ValueError(f"State must be integer in range 0 to {AddictionEnv.NUM_STATES - 1}")
         self._current_state = val
 
     @property 
@@ -37,20 +39,10 @@ class AddictionEnv(gym.Env):
         self._iterations = val
 
     def _get_reward(self, action: int):
-        rewards = {
-            0: [-5, 0, 5, 10],
-            1: [-5, 0, 0, -10],
-            2: [-5, -1, -1, -2]
-        }
-        return rewards.get(self.current_state)[action]
+        return np.random.normal(-2, 1) if action else np.random.normal(1, 2)
 
     def _increment_state(self, action: int):
-        next_states = {
-            0: [1, 1, 0, 1],
-            1: [1, 1, 1, 2],
-            2: [0, 2, 2, 2]
-        }
-        next_state = next_states.get(self.current_state)[action]
+        next_state = 0
         self.current_state = next_state
         return next_state
 
@@ -68,7 +60,9 @@ class AddictionEnv(gym.Env):
 
         return observation, info
 
-    def step(self, action):
+    def step(self, action):   
+        assert self.action_space.contains(action), "Invalid Action"
+
         reward = self._get_reward(action)
         observation = self._increment_state(action)
         info = self._get_info()
