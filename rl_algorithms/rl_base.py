@@ -16,15 +16,15 @@ class RLBase(ABC):
     #-------------------------------------------------------------------------------------------
 
     @property
-    def ep_obs(self) -> list[int]:
+    def ep_obs(self) -> list:
         return self._ep_obs
     
     @property
-    def ep_actions(self) -> list[int]:
+    def ep_actions(self) -> list:
         return self._ep_actions
     
     @property
-    def ep_rewards(self) -> list[float]:
+    def ep_rewards(self) -> list:
         return self._ep_rewards
 
     @property
