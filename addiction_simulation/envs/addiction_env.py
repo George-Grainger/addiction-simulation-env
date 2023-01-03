@@ -42,37 +42,41 @@ class AddictionEnv(gym.Env):
             1: [-5, 0, 0, -10],
             2: [-5, -1, -1, -2]
         }
-        return rewards.get(self._current_state)[action]
+        return rewards.get(self.current_state)[action]
 
-    def _get_obs(self, action: int):
+    def _increment_state(self, action: int):
         next_states = {
             0: [1, 1, 0, 1],
             1: [1, 1, 1, 2],
             2: [0, 2, 2, 2]
         }
-        self.current_state = next_states.get(self._current_state)[action]
-        return self._current_state
+        next_state = next_states.get(self.current_state)[action]
+        self.current_state = next_state
+        return next_state
 
     def _get_info(self):
         return {"distance": 0}
 
     def reset(self, seed=None, options=None):
-        self.seed(seed)
+        # We need the following line to seed self.np_random
+        super().reset(seed=seed)
+        
         self.iterations = 0
         self.current_state = 0
-        observation = self._current_state
+        observation = self.current_state
+        info = self._get_info()
 
-        return observation
+        return observation, info
 
     def step(self, action):
         reward = self._get_reward(action)
-        observation = self._get_obs(action)
+        observation = self._increment_state(action)
         info = self._get_info()
 
         self.iterations += 1
         terminated = self.iterations >= 1000
 
-        return observation, reward, terminated, info
+        return observation, reward, terminated, False, info
 
     def render(self):
         pass
