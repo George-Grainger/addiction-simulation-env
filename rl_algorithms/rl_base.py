@@ -7,8 +7,15 @@ class RLBase(ABC):
     Provides base properties and abstract methods required by all rl algorithms
     """
 
-    def __init__(self, debug: bool=False):
+    def __init__(self, n_actions, stress: float=0, instability: float=1, lr: float=0.6, epsilon_decay: float=0.999, debug: bool=False):
+        self.n_actions = n_actions
+        self._stress = stress
+        self._instability = instability
+        self.lr = lr
+        self._init_lr = lr
+        self.epsilon_decay = epsilon_decay
         self._debug = debug
+        
         self.reset()
 
     #-------------------------------------------------------------------------------------------
@@ -26,6 +33,15 @@ class RLBase(ABC):
     @property
     def ep_rewards(self) -> list:
         return self._ep_rewards
+
+
+    @property
+    def stress(self) -> float:
+        return self._stress
+
+    @property
+    def instability(self) -> float:
+        return self._instability
 
     @property
     def gamma(self) -> float:
@@ -54,18 +70,18 @@ class RLBase(ABC):
         self._lr = val
 
     @property
-    def decay(self) -> float:
+    def epsilon_decay(self) -> float:
         #decay is the rate of exponential decay for the learning rate (and epsilon if appropriate)
         #if set to 1 then no decay occurs
-        return self._decay
+        return self._epsilon_decay
 
-    @decay.setter
-    def decay(self, val: float):
+    @epsilon_decay.setter
+    def epsilon_decay(self, val: float):
         if val <= 0 or val > 1:
             raise ValueError("decay (eponential decay rate) must have a value between 0 (exclusive) and 1 (inclusive).")
         if not isinstance(val, float):
             raise TypeError("decay (exponential decay rate) must be a float.")
-        self._decay = val
+        self._epsilon_decay = val
 
     @property
     def n_actions(self) -> int:
@@ -109,7 +125,7 @@ class RLBase(ABC):
 
 
     @abstractmethod
-    def train(self, obv, action, reward, next_obv) -> float:
+    def train(self, obv, action, reward, next_obv, next_action = None) -> float:
         """
             function to train agent by applying the q-value update rule to the q-table
 
@@ -127,3 +143,11 @@ class RLBase(ABC):
             self.ep_obs.append(next_obv)
 
         return 0
+
+    @abstractmethod
+    def get_policy(self) -> dict:
+        raise NotImplementedError("get_policy must be implemented to return a dict of the optimal action in each state")
+    
+    @abstractmethod
+    def wipe(self):
+        raise NotImplementedError("wipe must be implemented")

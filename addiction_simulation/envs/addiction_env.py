@@ -9,14 +9,31 @@ class AddictionEnv(gym.Env):
     NUM_STATES = 1
     NUM_ACTIONS = 2
 
-    def __init__(self, render_mode: str=None):
+    addictive_actions = {1}
+
+    def __init__(self, rewards: list=[(5, 0.02), (2, 0.02)], render_mode: str=None):
         self.observation_space = spaces.Discrete(AddictionEnv.NUM_STATES)
         self.action_space = spaces.Discrete(AddictionEnv.NUM_ACTIONS)
-        self.iterations = 0
-        self.current_state = 0
+        self.current_state = self.np_random.integers(self.NUM_STATES, dtype=np.int64)
+
+        self.rewards = rewards
 
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
+
+    @property
+    def rewards(self) -> list:
+        return self._rewards
+    
+    @rewards.setter
+    def rewards(self, val):
+        if(type(val) != list):
+            raise TypeError("Rewards must be a list of tuples, containing, mean, standard deviation pairs")
+        if(len(val) != self.action_space.n):
+            raise IndexError("Must be a key value pair for every action")
+        if(any(type(el) is not tuple or len(el) != 2 for el in val)):
+            raise TypeError("Reward items must be tuple in the from (mean, std)")
+        self._rewards = val
 
     @property
     def current_state(self):
@@ -28,18 +45,8 @@ class AddictionEnv(gym.Env):
             raise ValueError(f"State must be integer in range 0 to {AddictionEnv.NUM_STATES - 1}")
         self._current_state = val
 
-    @property 
-    def iterations(self):
-        return self._iterations
-
-    @iterations.setter
-    def iterations(self, val: int):
-        if(val < 0):
-            raise ValueError("Number of iterations must be greater than 0")
-        self._iterations = val
-
     def _get_reward(self, action: int):
-        return np.random.normal(-2, 1) if action else np.random.normal(1, 2)
+        return self.np_random.normal(*self._rewards[action])
 
     def _increment_state(self, action: int):
         next_state = 0
@@ -47,14 +54,12 @@ class AddictionEnv(gym.Env):
         return next_state
 
     def _get_info(self):
-        return {"distance": 0}
+        return {}
 
     def reset(self, seed=None, options=None):
-        # We need the following line to seed self.np_random
         super().reset(seed=seed)
         
-        self.iterations = 0
-        self.current_state = 0
+        self.current_state = self.np_random.integers(self.NUM_STATES, dtype=np.int64)
         observation = self.current_state
         info = self._get_info()
 
@@ -67,10 +72,7 @@ class AddictionEnv(gym.Env):
         observation = self._increment_state(action)
         info = self._get_info()
 
-        self.iterations += 1
-        terminated = self.iterations >= 1000
-
-        return observation, reward, terminated, False, info
+        return observation, reward, False, False, info
 
     def render(self):
         pass
